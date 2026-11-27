@@ -1,0 +1,49 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "gmpay",
+	"main": "src/server-entry.ts",
+	"compatibility_date": "2026-07-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"placement": { "mode": "smart" },
+	"observability": { "enabled": true },
+	"cache": { "enabled": true },
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "gmpay",
+			"migrations_dir": "drizzle","database_id": "13a7a953-fe67-4357-ab4a-18f41b5dcf19"
+		}
+	],
+	"r2_buckets": [{ "binding": "FILES", "bucket_name": "gmpay","preview_bucket_name": "gmpay" }],
+	"kv_namespaces": [
+		{ "binding": "CACHE","id": "f0d9962872af4ceeac3e98f8d0911c3f" }
+	],
+	"send_email": [{ "name": "EMAIL" }],
+	"queues": {
+		"producers": [
+			{ "binding": "WEBHOOK_QUEUE", "queue": "gmpay-webhooks" },
+			{ "binding": "PAYMENT_QUEUE", "queue": "gmpay-payments" }
+		],
+		"consumers": [
+			{
+				"queue": "gmpay-webhooks",
+				"max_batch_size": 10,
+				"max_batch_timeout": 1,
+				"max_concurrency": 5,
+				"max_retries": 8,
+				"retry_delay": 15,
+				"dead_letter_queue": "gmpay-edge-webhooks-dlq"
+			},
+			{
+				"queue": "gmpay-payments",
+				"max_batch_size": 10,
+				"max_batch_timeout": 1,
+				"max_concurrency": 2,
+				"max_retries": 5,
+				"retry_delay": 15,
+				"dead_letter_queue": "gmpay-edge-payments-dlq"
+			}
+		]
+	},
+	"triggers": { "crons": ["* * * * *"] }
+}
